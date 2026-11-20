@@ -7,9 +7,9 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 
-DATA_FILE = Path(
-    os.environ.get("DASHBOARD_DATA_FILE", Path(__file__).with_name("data.xlsx"))
-)
+BACKEND_DIR = Path(__file__).resolve().parent
+DATA_FILE = Path(os.environ.get("DASHBOARD_DATA_FILE", BACKEND_DIR / "data.parquet"))
+LOCAL_FALLBACK_FILE = BACKEND_DIR / "data.xlsx"
 REQUIRED_COLUMNS = [
     "BillNo",
     "Outlet_Name",
@@ -23,19 +23,28 @@ REQUIRED_COLUMNS = [
 
 
 def load_dataset() -> pd.DataFrame:
-    if not DATA_FILE.is_file():
+    data_file = DATA_FILE
+    if "DASHBOARD_DATA_FILE" not in os.environ and not data_file.is_file():
+        if LOCAL_FALLBACK_FILE.is_file():
+            data_file = LOCAL_FALLBACK_FILE
+
+    if not data_file.is_file():
         raise FileNotFoundError(
-            f"Dashboard dataset was not found at {DATA_FILE}. "
-            "Place data.xlsx in the backend directory or set DASHBOARD_DATA_FILE."
+            f"Dashboard dataset was not found at {data_file}. "
+            "Place data.parquet in the backend directory, provide a local "
+            "data.xlsx fallback, or set DASHBOARD_DATA_FILE."
         )
 
-    data = pd.read_excel(
-        DATA_FILE, usecols=REQUIRED_COLUMNS, engine="calamine"
-    )
+    if data_file.suffix.lower() in {".parquet", ".pq"}:
+        data = pd.read_parquet(data_file, engine="pyarrow")
+    else:
+        data = pd.read_excel(data_file, engine="calamine")
+
     missing_columns = sorted(set(REQUIRED_COLUMNS) - set(data.columns))
     if missing_columns:
         raise ValueError(
-            "Dataset is missing required columns: " + ", ".join(missing_columns)
+            f"Dataset {data_file} is missing required columns: "
+            + ", ".join(missing_columns)
         )
 
     for column in ("Outlet_Name", "Group", "Order_Type", "Item"):

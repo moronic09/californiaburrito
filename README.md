@@ -1,6 +1,6 @@
 # California Burrito Business Analytics Dashboard
 
-A restaurant sales dashboard that turns item-level Excel sales data into an
+A restaurant sales dashboard that turns item-level sales data into an
 interactive view of revenue, orders, quantity sold, and product performance.
 The project is built as a Software Engineering Intern assessment.
 
@@ -18,25 +18,24 @@ The project is built as a Software Engineering Intern assessment.
 
 ## Technologies
 
-- **Backend:** Python, FastAPI, Pandas, python-calamine
+- **Backend:** Python, FastAPI, Pandas, PyArrow, python-calamine
 - **Frontend:** React, TypeScript, Vite
 - **Charts and icons:** Recharts, Lucide React
-- **Dataset format:** Excel (`.xlsx`)
+- **Dataset format:** Compressed Parquet (`.parquet`), with local Excel (`.xlsx`) support
 
 ## Dataset
 
-The assessment workbook is intentionally not tracked or uploaded. It may contain
-assessment or business data, and the dashboard owner should decide separately
-whether it is appropriate to share. To run the application, place the
-authorized workbook at `backend/data.xlsx`. The backend also supports setting
-the `DASHBOARD_DATA_FILE` environment variable to a different local workbook
-path.
+The deployment dataset is `backend/data.parquet`, a compressed copy of the
+assessment workbook used by the API in production. Keep `backend/data.xlsx`
+local: it remains a supported fallback for development when the Parquet file
+is absent. The backend also supports setting `DASHBOARD_DATA_FILE` to a
+different local `.parquet` or `.xlsx` file.
 
 ## Requirements
 
 - Python 3.10 or newer
 - Node.js 20.19+ or 22.12+ (required by the installed Vite 8 release)
-- An authorized `backend/data.xlsx` workbook
+- The included `backend/data.parquet` dataset
 
 ## Setup on Windows PowerShell
 
@@ -77,7 +76,7 @@ npm run build
 
 ## Architecture
 
-- `backend/main.py` reads and validates the workbook once at API startup,
+- `backend/main.py` reads and validates the Parquet dataset once at API startup,
   cleans invalid dates and numeric values, calculates line-item revenue, and
   applies the same filters to each summary and chart aggregation.
 - `GET /api/dashboard` returns the filter options, KPIs, and all chart datasets

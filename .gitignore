@@ -16,6 +16,7 @@ htmlcov/
 # Local assessment data and environment settings
 *.xlsx
 *.xls
+!backend/data.parquet
 .env
 .env.*
 !.env.example
